@@ -1,4 +1,6 @@
 using Microsoft.VisualBasic.Devices;
+using NAudio.Vorbis;
+using NAudio.Wave;
 using System.IO;
 using System.Windows.Forms;
 using ZenScribe.Helpers;
@@ -29,6 +31,10 @@ namespace TextEdit
         System.Windows.Forms.Timer autoSaveTimer = new System.Windows.Forms.Timer();
         KeyboardHelper kh;
         FileHelper fh;
+
+        private WaveOutEvent outputDevice;
+        private VorbisWaveReader vorbisReader;
+        int currentTrack = 0;   
 
         public Main()
         {
@@ -101,6 +107,58 @@ namespace TextEdit
                     this.TransparencyKey = Color.LimeGreen;
                     MainText.BackColor = Color.LimeGreen;
                     MainText.ForeColor = Color.Black;
+                }
+            }
+
+            // MUSIC
+            if (e.Control && e.KeyCode == Keys.M)
+            {
+                string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                path += "\\Data\\Music";
+                currentTrack++;
+                string[] tracklist = Directory.GetFiles(path);
+                int totalTracks = tracklist.Length;
+                if (currentTrack > totalTracks) currentTrack = 0;
+
+                if (outputDevice != null)
+                {
+                    outputDevice.Stop();
+                    outputDevice.Dispose();
+                    outputDevice = null;
+                }
+
+                if (vorbisReader != null)
+                {
+                    vorbisReader.Dispose();
+                    vorbisReader = null;
+                }
+
+                if (currentTrack > 0)
+                {
+                    try
+                    {
+                        string nextSong = tracklist[currentTrack - 1];
+                        outputDevice = new WaveOutEvent();
+                        vorbisReader = new VorbisWaveReader(nextSong);
+                        outputDevice.Init(vorbisReader);
+                        outputDevice.Play();
+                        Notification.Text = "Now playing: " + nextSong.Split('\\').Last();
+                        Notification.Refresh();
+                        System.Threading.Thread.Sleep(3000);
+                        Notification.Text = "";
+                        Notification.Refresh();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error trying to play music: " + ex.Message);
+                    }
+                }
+                else {
+                    Notification.Text = "Music Off";
+                    Notification.Refresh();
+                    System.Threading.Thread.Sleep(3000);
+                    Notification.Text = "";
+                    Notification.Refresh();
                 }
             }
 
