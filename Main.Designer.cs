@@ -32,6 +32,8 @@
             Counter = new Label();
             Clock = new Label();
             Notification = new Label();
+            DocumentStatus = new Label();
+            GoalStatus = new Label();
             SuspendLayout();
             // 
             // MainText
@@ -80,6 +82,26 @@
             Notification.Size = new Size(0, 17);
             Notification.TabIndex = 3;
             Notification.TextAlign = ContentAlignment.MiddleRight;
+            //
+            // DocumentStatus
+            //
+            DocumentStatus.AutoSize = true;
+            DocumentStatus.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            DocumentStatus.ForeColor = Color.Silver;
+            DocumentStatus.Location = new Point(800, 695);
+            DocumentStatus.Name = "DocumentStatus";
+            DocumentStatus.Size = new Size(0, 17);
+            DocumentStatus.TabIndex = 4;
+            //
+            // GoalStatus
+            //
+            GoalStatus.AutoSize = true;
+            GoalStatus.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            GoalStatus.ForeColor = Color.FromArgb(169, 199, 158);
+            GoalStatus.Location = new Point(900, 695);
+            GoalStatus.Name = "GoalStatus";
+            GoalStatus.Size = new Size(0, 17);
+            GoalStatus.TabIndex = 5;
             // 
             // Main
             // 
@@ -88,6 +110,8 @@
             BackColor = Color.Black;
             ClientSize = new Size(1189, 724);
             Controls.Add(Notification);
+            Controls.Add(GoalStatus);
+            Controls.Add(DocumentStatus);
             Controls.Add(Clock);
             Controls.Add(Counter);
             Controls.Add(MainText);
@@ -104,5 +128,7 @@
         private Label Counter;
         private Label Clock;
         private Label Notification;
+        private Label DocumentStatus;
+        private Label GoalStatus;
     }
 }

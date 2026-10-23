@@ -1,58 +1,136 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace ZenScribe.Helpers
 {
+    public sealed record OpenedFile(string Path, string Contents, string? BackupPath);
+
     public class FileHelper
     {
-        public FileHelper() { }
-        public Tuple<string,string> OpenFile()
+        private static readonly string backupDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Drafty",
+            "Backups");
+
+        public OpenedFile? OpenFile(IWin32Window owner)
         {
-            OpenFileDialog openFileDialog1 = new OpenFileDialog();
-            openFileDialog1.Filter = "Text file|*.txt";
-            openFileDialog1.Title = "Open";
-            openFileDialog1.ShowDialog();
-            if (openFileDialog1.FileName != "")
+            using OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                System.IO.FileStream fs =
-                    (System.IO.FileStream)openFileDialog1.OpenFile();
-                string fileContents;
-                using (StreamReader reader = new StreamReader(fs))
+                Filter = "Text file|*.txt",
+                Title = "Open"
+            };
+
+            if (openFileDialog.ShowDialog(owner) != DialogResult.OK)
+            {
+                return null;
+            }
+
+            string? createdBackupPath = null;
+            try
+            {
+                createdBackupPath = CreateBackup(openFileDialog.FileName);
+            }
+            catch (Exception ex) when (IsFileOperationError(ex))
+            {
+                MessageBox.Show(
+                    owner,
+                    $"Non è stato possibile creare il backup. Il file verrà comunque aperto.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                    "Backup non creato",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+
+            string fileContents = File.ReadAllText(openFileDialog.FileName);
+            return new OpenedFile(openFileDialog.FileName, fileContents, createdBackupPath);
+        }
+
+        public void SaveFile(string filePath, RichTextBox mainText)
+        {
+            string fullPath = Path.GetFullPath(filePath);
+            string directory = Path.GetDirectoryName(fullPath)
+                ?? throw new ArgumentException("The file path must include a directory.", nameof(filePath));
+            string temporaryPath = Path.Combine(
+                directory,
+                $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                mainText.SaveFile(temporaryPath, RichTextBoxStreamType.PlainText);
+                FlushFileToDisk(temporaryPath);
+
+                if (File.Exists(fullPath))
                 {
-                    fileContents = reader.ReadToEnd();
+                    File.Replace(temporaryPath, fullPath, null);
                 }
-                return new Tuple<string, string>(openFileDialog1.FileName, fileContents);
+                else
+                {
+                    File.Move(temporaryPath, fullPath);
+                }
             }
-            return new Tuple<string, string>("", "");
-        }
-
-        public void SaveFile(string currentFile, RichTextBox MainText)
-        {
-            MainText.SaveFile(currentFile, RichTextBoxStreamType.PlainText);
-            //MessageBox.Show("File Saved.","", MessageBoxButtons.OK,MessageBoxIcon.Information);
-            
-        }
-
-        public string SaveNewFile(string currentFile, RichTextBox MainText)
-        {
-            string retval = "";
-            SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-            saveFileDialog1.Filter = "Text file|*.txt";
-            saveFileDialog1.Title = "Save";
-            saveFileDialog1.FileName = currentFile;
-            saveFileDialog1.ShowDialog();
-            if (saveFileDialog1.FileName != "")
+            finally
             {
-                System.IO.FileStream fs = (System.IO.FileStream)saveFileDialog1.OpenFile();
-                MainText.SaveFile(fs, RichTextBoxStreamType.PlainText);
-
-                fs.Close();
-                retval = saveFileDialog1.FileName;
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
             }
-            return retval;
+        }
+
+        public string SaveNewFile(RichTextBox mainText)
+        {
+            using SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "Text file|*.txt",
+                Title = "Save"
+            };
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                SaveFile(saveFileDialog.FileName, mainText);
+                return saveFileDialog.FileName;
+            }
+
+            return "";
+        }
+
+        private static string CreateBackup(string sourcePath)
+        {
+            Directory.CreateDirectory(backupDirectory);
+            string backupFileName =
+                $"{Path.GetFileName(sourcePath)}.{DateTime.Now:yyyyMMdd-HHmmss-fff}.{Guid.NewGuid():N}.bak";
+            string destinationPath = Path.Combine(backupDirectory, backupFileName);
+            string temporaryPath = destinationPath + ".tmp";
+            try
+            {
+                File.Copy(sourcePath, temporaryPath);
+                FlushFileToDisk(temporaryPath);
+                File.Move(temporaryPath, destinationPath);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+
+            return destinationPath;
+        }
+
+        private static void FlushFileToDisk(string filePath)
+        {
+            using FileStream stream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.None);
+            stream.Flush(true);
+        }
+
+        private static bool IsFileOperationError(Exception exception)
+        {
+            return exception is IOException
+                or UnauthorizedAccessException
+                or ArgumentException
+                or NotSupportedException
+                or System.Security.SecurityException;
         }
     }
 

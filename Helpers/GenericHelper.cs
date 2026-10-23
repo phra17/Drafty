@@ -31,14 +31,6 @@ namespace ZenScribe.Helpers
             return _wordCount;
         }
 
-        public static int CalculateMaxDescriptionLineLength(RichTextBox MainText)
-        {
-            Graphics g = MainText.CreateGraphics();
-            float twoCharW = g.MeasureString("aa", MainText.Font).Width;
-            float oneCharW = g.MeasureString("a", MainText.Font).Width;
-            return (int)((float)MainText.Width / (twoCharW - oneCharW));
-        }
-
         public static List<string> LoadFonts() {
             string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             path += "\\Data\\fonts.txt";
@@ -47,32 +39,45 @@ namespace ZenScribe.Helpers
         }
 
         public static void LoadColorSchemes(List<Color> backgrounds, List<Color> foregrounds) {
-            Color black = System.Drawing.ColorTranslator.FromHtml("#000000");
-            Color black1 = System.Drawing.ColorTranslator.FromHtml("#222323");
-            Color black2 = System.Drawing.ColorTranslator.FromHtml("#382b26");
-            Color black3 = System.Drawing.ColorTranslator.FromHtml("#3e232c");
-            Color white = System.Drawing.ColorTranslator.FromHtml("#ffffff");
-            Color white1 = System.Drawing.ColorTranslator.FromHtml("#f0f6f0");
-            Color white2 = System.Drawing.ColorTranslator.FromHtml("#b8c2b9");
-            Color white3 = System.Drawing.ColorTranslator.FromHtml("#edf6d6");
-            backgrounds.Add(black);
-            backgrounds.Add(black2);
-            backgrounds.Add(black3);
-            foregrounds.Add(white);
-            foregrounds.Add(white2);
-            foregrounds.Add(white3);
+            (string Background, string Foreground)[] schemes =
+            {
+                ("#000000", "#FFFFFF"),
+                ("#222323", "#F0F6F0"),
+                ("#382B26", "#B8C2B9"),
+                ("#3E232C", "#EDF6D6"),
+                ("#172554", "#DBEAFE"),
+                ("#17352D", "#D9F2E6"),
+                ("#30213D", "#F3E8FF"),
+                ("#F2E8D5", "#2B2520")
+            };
+
+            foreach ((string background, string foreground) in schemes)
+            {
+                backgrounds.Add(ColorTranslator.FromHtml(background));
+                foregrounds.Add(ColorTranslator.FromHtml(foreground));
+            }
         }
 
-        public static List<string> LoadCommandList() {
-            List<string> commandList = new List<string>();
-            commandList.Add("Ctrl + S = SAVE");
-            commandList.Add("Ctrl + O = OPEN FILE");
-            commandList.Add("Ctrl + F = SEARCH");
-            commandList.Add("Ctrl + N = NEW FILE");
-            commandList.Add("Alt + = LARGER FONT");
-            commandList.Add("Alt - = SMALLER FONT");
-            commandList.Add("Alt + C = CHANGE COLOR");
-            commandList.Add("Alt + F = CHANGE FONT");
+        public static List<(string Shortcut, string Description)> LoadCommandList() {
+            List<(string Shortcut, string Description)> commandList = new List<(string, string)>
+            {
+                ("F1", "Mostra questa schermata"),
+                ("Esc", "Chiude la schermata di aiuto"),
+                ("Ctrl + S", "Salva il file o sceglie dove salvarlo"),
+                ("Ctrl + O", "Apre un file"),
+                ("Ctrl + F", "Cerca un testo"),
+                ("Ctrl + N", "Salva il file aperto e svuota la bozza"),
+                ("Ctrl + M", "Cambia traccia o disattiva la musica"),
+                ("Alt + =", "Aumenta la dimensione del carattere"),
+                ("Alt + -", "Riduce la dimensione del carattere"),
+                ("Alt + C", "Scorre gli schemi colore e la trasparenza"),
+                ("Alt + F", "Cambia carattere"),
+                ("Alt + T", "Attiva o disattiva la trasparenza"),
+                ("Alt + W", "Cambia la larghezza del testo"),
+                ("Ctrl + Alt + B", "Sposta la barra dati in alto o in basso"),
+                ("Invio", "Va a capo o conferma la ricerca"),
+                ("Tab", "Inserisce un rientro")
+            };
             return commandList;
         }
     }
